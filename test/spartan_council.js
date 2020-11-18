@@ -100,6 +100,111 @@ contract('SpartanCouncil', accounts => {
 		});
 	});
 
+	describe('Minting with token uri', () => {
+		let spartanCouncil;
+		const uri = 'www.google.com';
+		beforeEach(async () => {
+			spartanCouncil = await SpartanCouncil.new('Spartan Council', 'SC', {
+				from: ownerAddress,
+			});
+		});
+		it('should enable super owner to mint a token to themselves', async () => {
+			const tx = await spartanCouncil.mintWithTokenURI(ownerAddress, tokenIdOne, uri, {
+				from: ownerAddress,
+			});
+			expectEvent(tx, 'Mint', {
+				to: ownerAddress,
+				tokenId: tokenIdOne,
+			});
+			expectEvent(tx, 'TokenURISet', {
+				tokenId: tokenIdOne,
+				tokenURI: uri,
+			});
+		});
+		it('should enable super owner to mint a token to a second address', async () => {
+			const tx = await spartanCouncil.mintWithTokenURI(receiver, tokenIdOne, uri, {
+				from: ownerAddress,
+			});
+			expectEvent(tx, 'Mint', {
+				to: receiver,
+				tokenId: tokenIdOne,
+			});
+			expectEvent(tx, 'TokenURISet', {
+				tokenId: tokenIdOne,
+				tokenURI: uri,
+			});
+		});
+		it('should not enable super owner to mint an already existing token', async () => {
+			await spartanCouncil.mintWithTokenURI(receiver, tokenIdOne, uri, {
+				from: ownerAddress,
+			});
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(receiver, tokenIdOne, uri, {
+					from: ownerAddress,
+				}),
+				'ERC721: token already minted'
+			);
+		});
+		it('should prevent non super owner to mint to themselves', async () => {
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(receiver, tokenIdOne, uri, {
+					from: receiver,
+				}),
+				'Ownable: caller is not the owner.'
+			);
+		});
+		it('should prevent non super owner to mint to another address', async () => {
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(arbAddress, tokenIdOne, uri, {
+					from: receiver,
+				}),
+				'Ownable: caller is not the owner.'
+			);
+		});
+		it('should prevent minting with tokenId as 0', async () => {
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(receiver, new BN(0), uri, {
+					from: ownerAddress,
+				}),
+				'Token ID must be greater than 0'
+			);
+		});
+		it('should allow minting with tokenId as string', async () => {
+			const tx = await spartanCouncil.mintWithTokenURI(receiver, '1234', uri, {
+				from: ownerAddress,
+			});
+			expectEvent(tx, 'Mint', {
+				to: receiver,
+				tokenId: '1234',
+			});
+		});
+		it('should allow minting with tokenId as a large number', async () => {
+			const tx = await spartanCouncil.mintWithTokenURI(receiver, 1234, uri, {
+				from: ownerAddress,
+			});
+			expectEvent(tx, 'Mint', {
+				to: receiver,
+				tokenId: '1234',
+			});
+		});
+		it('should prevent minting to zero address', async () => {
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(constants.ZERO_ADDRESS, new BN('1234124'), uri, {
+					from: ownerAddress,
+				}),
+				'Method called with the zero address'
+			);
+		});
+		it('should prevent minting with empty uri', async () => {
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(ownerAddress, tokenIdOne, '', {
+					from: ownerAddress,
+				}),
+				'URI must be supplied'
+			);
+		});
+	});
+
 	describe('Transferring', () => {
 		let spartanCouncil;
 		beforeEach(async () => {
@@ -117,7 +222,7 @@ contract('SpartanCouncil', accounts => {
 			const tx = await spartanCouncil.transfer(ownerAddress, arbAddress, tokenIdOne, {
 				from: ownerAddress,
 			});
-			expectEvent(tx, 'Transfer', {
+			expectEvent(tx, 'Transferred', {
 				from: ownerAddress,
 				to: arbAddress,
 				tokenId: tokenIdOne,
@@ -127,11 +232,19 @@ contract('SpartanCouncil', accounts => {
 			const tx = await spartanCouncil.transfer(receiver, arbAddress, tokenIdTwo, {
 				from: ownerAddress,
 			});
-			expectEvent(tx, 'Transfer', {
+			expectEvent(tx, 'Transferred', {
 				from: receiver,
 				to: arbAddress,
 				tokenId: tokenIdTwo,
 			});
+		});
+		it('should prevent super owner to transfer token that is not assigned to "from" address', async () => {
+			await expectRevert(
+				spartanCouncil.transfer(ownerAddress, arbAddress, tokenIdTwo, {
+					from: ownerAddress,
+				}),
+				'From address does not own token'
+			);
 		});
 		it('should prevent non super owner to transfer token they own', async () => {
 			await expectRevert(
@@ -192,13 +305,13 @@ contract('SpartanCouncil', accounts => {
 			});
 		});
 		it('should enable super owner to burn token they own', async () => {
-			const previousOwner = await spartanCouncil.tokenOwner.call(tokenIdOne);
+			const previousOwner = await spartanCouncil.ownerOf.call(tokenIdOne);
 			const tx = await spartanCouncil.burn(tokenIdOne, { from: ownerAddress });
 			expectEvent(tx, 'Burn', {
 				tokenId: tokenIdOne,
 			});
 			assert(await spartanCouncil.tokenOwned.call(previousOwner), constants.ZERO_BYTES32);
-			assert(await spartanCouncil.tokenOwner.call(tokenIdOne), constants.ZERO_ADDRESS);
+			assert(await spartanCouncil.ownerOf.call(tokenIdOne), constants.ZERO_ADDRESS);
 		});
 		it('should enable super owner to burn token someone else owns', async () => {
 			const tx = await spartanCouncil.burn(tokenIdTwo, { from: ownerAddress });
@@ -263,7 +376,7 @@ contract('SpartanCouncil', accounts => {
 			const tx = await spartanCouncil.setTokenURI(tokenIdOne, uri, {
 				from: ownerAddress,
 			});
-			expectEvent(tx, 'MetadataChanged', {
+			expectEvent(tx, 'TokenURISet', {
 				tokenId: tokenIdOne,
 				tokenURI: uri,
 			});

@@ -2,6 +2,7 @@ pragma solidity ^0.5.16;
 
 import "openzeppelin-solidity-2.3.0/contracts/ownership/Ownable.sol";
 
+
 /**
  * @title Custom NFT contract based off ERC721 but restricted by access control.
  * @dev made for https://sips.synthetix.io/sips/sip-93
@@ -12,18 +13,18 @@ contract SpartanCouncil is Ownable {
     // Event that is emitted when an existing SpartanCouncil token is burned
     event Burn(uint256 indexed tokenId);
     // Event that is emitted when an existing SpartanCouncil token is transfer
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-    // Event that is emitted when an metadata is added
-    event MetadataChanged(uint256 tokenId, string tokenURI);
+    event Transferred(address indexed from, address indexed to, uint256 indexed tokenId);
+    // Event that is emitted when an existing SpartanCouncil token's uri is altered
+    event TokenURISet(uint256 tokenId, string tokenURI);
 
     // Array of token ids
     uint256[] public tokens;
-    // Map between a owner and their token
+    // Map between an owner and their tokenx
     mapping(address => uint256) public tokenOwned;
     // Maps a token to the owner address
-    mapping(uint256 => address) public tokenOwner;
+    mapping(uint256 => address) public ownerOf;
     // Optional mapping for token URIs
-    mapping(uint256 => string) public tokenURIs;
+    mapping(uint256 => string) private tokenURIs;
     // Token name
     string public name;
     // Token symbol
@@ -61,14 +62,6 @@ contract SpartanCouncil is Ownable {
     }
 
     /**
-     * @dev Function to check the owner of a token
-     * @param tokenId uint256 ID of the token to retrieve the owner for
-     */
-    function ownerOf(uint256 tokenId) public view returns (address) {
-        return tokenOwner[tokenId];
-    }
-
-    /**
      * @dev Transfer function to assign a token to another address
      * Reverts if the address already owns a token
      * @param from address the address that currently owns the token
@@ -81,13 +74,14 @@ contract SpartanCouncil is Ownable {
         uint256 tokenId
     ) public isValidAddress(to) onlyOwner {
         require(tokenOwned[to] == 0, "Destination address already owns a token");
+        require(ownerOf[tokenId] == from, "From address does not own token");
 
         tokenOwned[from] = 0;
         tokenOwned[to] = tokenId;
 
-        tokenOwner[tokenId] = to;
+        ownerOf[tokenId] = to;
 
-        emit Transfer(from, to, tokenId);
+        emit Transferred(from, to, tokenId);
     }
 
     /**
@@ -98,12 +92,37 @@ contract SpartanCouncil is Ownable {
      */
     function mint(address to, uint256 tokenId) public onlyOwner isValidAddress(to) {
         require(tokenId != 0, "Token ID must be greater than 0");
-        require(tokenOwner[tokenId] == address(0), "ERC721: token already minted");
+        require(ownerOf[tokenId] == address(0), "ERC721: token already minted");
 
         tokens.push(tokenId);
         tokenOwned[to] = tokenId;
-        tokenOwner[tokenId] = to;
+        ownerOf[tokenId] = to;
 
+        emit Mint(tokenId, to);
+    }
+
+    /**
+     * @dev Mint function to mint a new token given a tokenId and assign it to an address
+     * Reverts if the tokenId is 0 or the token already exist
+     * @param to address the address to assign the token to
+     * @param tokenId uint256 ID of the token to mint
+     */
+    function mintWithTokenURI(
+        address to,
+        uint256 tokenId,
+        string memory uri
+    ) public onlyOwner isValidAddress(to) {
+        require(tokenId != 0, "Token ID must be greater than 0");
+        require(ownerOf[tokenId] == address(0), "ERC721: token already minted");
+        require(bytes(uri).length > 0, "URI must be supplied");
+
+        tokens.push(tokenId);
+        tokenOwned[to] = tokenId;
+        ownerOf[tokenId] = to;
+
+        tokenURIs[tokenId] = uri;
+
+        emit TokenURISet(tokenId, uri);
         emit Mint(tokenId, to);
     }
 
@@ -113,24 +132,21 @@ contract SpartanCouncil is Ownable {
      * @param tokenId uint256 ID of the token to burn
      */
     function burn(uint256 tokenId) public onlyOwner {
-        require(tokenOwner[tokenId] != address(0), "ERC721: token does not exist");
+        address previousOwner = ownerOf[tokenId];
+        require(previousOwner != address(0), "ERC721: token does not exist");
 
-        address previousOwner = tokenOwner[tokenId];
-
-        tokenOwned[previousOwner] = 0;
-        tokenOwner[tokenId] = address(0);
-
-        uint256 lastElement = tokens[tokens.length - 1];
+        delete tokenOwned[previousOwner];
+        delete ownerOf[tokenId];
 
         for (uint256 i = 0; i < tokens.length; i++) {
             if (tokens[i] == tokenId) {
-                tokens[i] = lastElement;
+                tokens[i] = tokens[tokens.length - 1];
+                break;
             }
         }
 
-        tokens.pop;
+        tokens.pop();
 
-        // Clear metadata (if any)
         if (bytes(tokenURIs[tokenId]).length != 0) {
             delete tokenURIs[tokenId];
         }
@@ -151,7 +167,7 @@ contract SpartanCouncil is Ownable {
      * @param tokenId uint256 ID of the token to retrieve the uri for
      */
     function tokenURI(uint256 tokenId) public view returns (string memory) {
-        require(tokenOwner[tokenId] != address(0), "ERC721: token does not exist");
+        require(ownerOf[tokenId] != address(0), "ERC721: token does not exist");
         string memory _tokenURI = tokenURIs[tokenId];
         return _tokenURI;
     }
@@ -163,8 +179,8 @@ contract SpartanCouncil is Ownable {
      * @param uri string URI to assign
      */
     function setTokenURI(uint256 tokenId, string memory uri) public onlyOwner {
-        require(tokenOwner[tokenId] != address(0), "ERC721: token does not exist");
+        require(ownerOf[tokenId] != address(0), "ERC721: token does not exist");
         tokenURIs[tokenId] = uri;
-        emit MetadataChanged(tokenId, uri);
+        emit TokenURISet(tokenId, uri);
     }
 }
