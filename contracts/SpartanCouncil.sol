@@ -72,7 +72,7 @@ contract SpartanCouncil is Ownable {
         address from,
         address to,
         uint256 tokenId
-    ) public isValidAddress(to) onlyOwner {
+    ) public isValidAddress(to) isValidAddress(from) onlyOwner {
         require(tokenOwned[to] == 0, "Destination address already owns a token");
         require(ownerOf[tokenId] == from, "From address does not own token");
 

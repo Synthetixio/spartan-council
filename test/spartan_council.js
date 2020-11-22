@@ -289,6 +289,14 @@ contract('SpartanCouncil', accounts => {
 				'Method called with the zero address'
 			);
 		});
+		it('should prevent transferring from the zero address', async () => {
+			await expectRevert(
+				spartanCouncil.transfer(constants.ZERO_ADDRESS, receiver, new BN(5), {
+					from: ownerAddress,
+				}),
+				'Method called with the zero address'
+			);
+		});
 	});
 
 	describe('Burning', () => {
