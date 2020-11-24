@@ -54,11 +54,7 @@ contract SpartanCouncil is Ownable {
      * @param owner address the address to check the balance of
      */
     function balanceOf(address owner) public view isValidAddress(owner) returns (uint256) {
-        if (tokenOwned[owner] > 0) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return tokenOwned[owner] > 0 ? 1 : 0;
     }
 
     /**
