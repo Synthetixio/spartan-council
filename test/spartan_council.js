@@ -11,7 +11,7 @@ contract('SpartanCouncil', accounts => {
 	const tokenIdOne = new BN(1);
 	const tokenIdTwo = new BN(2);
 	const tokenIdThree = new BN(3);
-	const [ownerAddress, receiver, arbAddress] = accounts;
+	const [ownerAddress, receiver, arb1Address, arb2Address] = accounts;
 	describe('Minting', () => {
 		let spartanCouncil;
 		beforeEach(async () => {
@@ -45,7 +45,7 @@ contract('SpartanCouncil', accounts => {
 				spartanCouncil.mint(receiver, tokenIdOne, {
 					from: ownerAddress,
 				}),
-				'ERC721: token already minted'
+				'Destination address already owns a token.'
 			);
 		});
 		it('should prevent non super owner to mint to themselves', async () => {
@@ -58,7 +58,7 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent non super owner to mint to another address', async () => {
 			await expectRevert(
-				spartanCouncil.mint(arbAddress, tokenIdOne, {
+				spartanCouncil.mint(arb1Address, tokenIdOne, {
 					from: receiver,
 				}),
 				'Ownable: caller is not the owner.'
@@ -96,6 +96,17 @@ contract('SpartanCouncil', accounts => {
 					from: ownerAddress,
 				}),
 				'Method called with the zero address'
+			);
+		});
+		it('should prevent minting an existing token to an address which does not own a token', async () => {
+			const tx = await spartanCouncil.mint(ownerAddress, tokenIdOne, {
+				from: ownerAddress,
+			});
+			await expectRevert(
+				spartanCouncil.mint(arb2Address, tokenIdOne, {
+					from: ownerAddress,
+				}),
+				'ERC721: token already minted'
 			);
 		});
 	});
@@ -142,7 +153,7 @@ contract('SpartanCouncil', accounts => {
 				spartanCouncil.mintWithTokenURI(receiver, tokenIdOne, uri, {
 					from: ownerAddress,
 				}),
-				'ERC721: token already minted'
+				'Destination address already owns a token.'
 			);
 		});
 		it('should prevent non super owner to mint to themselves', async () => {
@@ -155,7 +166,7 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent non super owner to mint to another address', async () => {
 			await expectRevert(
-				spartanCouncil.mintWithTokenURI(arbAddress, tokenIdOne, uri, {
+				spartanCouncil.mintWithTokenURI(arb1Address, tokenIdOne, uri, {
 					from: receiver,
 				}),
 				'Ownable: caller is not the owner.'
@@ -203,6 +214,17 @@ contract('SpartanCouncil', accounts => {
 				'URI must be supplied'
 			);
 		});
+		it('should prevent minting an existing token to an address which does not own a token', async () => {
+			const tx = await spartanCouncil.mintWithTokenURI(ownerAddress, tokenIdOne, uri, {
+				from: ownerAddress,
+			});
+			await expectRevert(
+				spartanCouncil.mintWithTokenURI(arb2Address, tokenIdOne, uri, {
+					from: ownerAddress,
+				}),
+				'ERC721: token already minted'
+			);
+		});
 	});
 
 	describe('Transferring', () => {
@@ -219,28 +241,28 @@ contract('SpartanCouncil', accounts => {
 			});
 		});
 		it('should enable super owner to transfer token they own', async () => {
-			const tx = await spartanCouncil.transfer(ownerAddress, arbAddress, tokenIdOne, {
+			const tx = await spartanCouncil.transferFrom(ownerAddress, arb1Address, tokenIdOne, {
 				from: ownerAddress,
 			});
 			expectEvent(tx, 'Transferred', {
 				from: ownerAddress,
-				to: arbAddress,
+				to: arb1Address,
 				tokenId: tokenIdOne,
 			});
 		});
 		it('should enable super owner to transfer token someone else owns', async () => {
-			const tx = await spartanCouncil.transfer(receiver, arbAddress, tokenIdTwo, {
+			const tx = await spartanCouncil.transferFrom(receiver, arb1Address, tokenIdTwo, {
 				from: ownerAddress,
 			});
 			expectEvent(tx, 'Transferred', {
 				from: receiver,
-				to: arbAddress,
+				to: arb1Address,
 				tokenId: tokenIdTwo,
 			});
 		});
 		it('should prevent super owner to transfer token that is not assigned to "from" address', async () => {
 			await expectRevert(
-				spartanCouncil.transfer(ownerAddress, arbAddress, tokenIdTwo, {
+				spartanCouncil.transferFrom(ownerAddress, arb1Address, tokenIdTwo, {
 					from: ownerAddress,
 				}),
 				'From address does not own token'
@@ -248,7 +270,7 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent non super owner to transfer token they own', async () => {
 			await expectRevert(
-				spartanCouncil.transfer(receiver, arbAddress, tokenIdTwo, {
+				spartanCouncil.transferFrom(receiver, arb1Address, tokenIdTwo, {
 					from: receiver,
 				}),
 				'Ownable: caller is not the owner.'
@@ -256,7 +278,7 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent non super owner to transfer token someone else owns', async () => {
 			await expectRevert(
-				spartanCouncil.transfer(ownerAddress, arbAddress, tokenIdOne, {
+				spartanCouncil.transferFrom(ownerAddress, arb1Address, tokenIdOne, {
 					from: receiver,
 				}),
 				'Ownable: caller is not the owner.'
@@ -264,18 +286,18 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent non super owner to transfer token someone else owns by inputing their address as from', async () => {
 			await expectRevert(
-				spartanCouncil.transfer(receiver, arbAddress, tokenIdOne, {
+				spartanCouncil.transferFrom(receiver, arb1Address, tokenIdOne, {
 					from: receiver,
 				}),
 				'Ownable: caller is not the owner.'
 			);
 		});
 		it('should prevent transfer to user who already owns a token', async () => {
-			await spartanCouncil.mint(arbAddress, tokenIdThree, {
+			await spartanCouncil.mint(arb1Address, tokenIdThree, {
 				from: ownerAddress,
 			});
 			await expectRevert(
-				spartanCouncil.transfer(arbAddress, receiver, tokenIdThree, {
+				spartanCouncil.transferFrom(arb1Address, receiver, tokenIdThree, {
 					from: ownerAddress,
 				}),
 				'Destination address already owns a token.'
@@ -283,7 +305,7 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent transferring to zero address', async () => {
 			await expectRevert(
-				spartanCouncil.transfer(receiver, constants.ZERO_ADDRESS, tokenIdTwo, {
+				spartanCouncil.transferFrom(receiver, constants.ZERO_ADDRESS, tokenIdTwo, {
 					from: ownerAddress,
 				}),
 				'Method called with the zero address'
@@ -291,7 +313,7 @@ contract('SpartanCouncil', accounts => {
 		});
 		it('should prevent transferring from the zero address', async () => {
 			await expectRevert(
-				spartanCouncil.transfer(constants.ZERO_ADDRESS, receiver, new BN(5), {
+				spartanCouncil.transferFrom(constants.ZERO_ADDRESS, receiver, new BN(5), {
 					from: ownerAddress,
 				}),
 				'Method called with the zero address'
@@ -405,7 +427,7 @@ contract('SpartanCouncil', accounts => {
 			);
 		});
 		it('should return the correct balances', async () => {
-			assert(await spartanCouncil.balanceOf.call(arbAddress), new BN(0));
+			assert(await spartanCouncil.balanceOf.call(arb1Address), new BN(0));
 			assert(await spartanCouncil.balanceOf.call(receiver), new BN(1));
 		});
 		it('should return the correct owner', async () => {

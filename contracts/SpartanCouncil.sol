@@ -12,14 +12,14 @@ contract SpartanCouncil is Ownable {
     event Mint(uint256 indexed tokenId, address to);
     // Event that is emitted when an existing SpartanCouncil token is burned
     event Burn(uint256 indexed tokenId);
-    // Event that is emitted when an existing SpartanCouncil token is transfer
+    // Event that is emitted when an existing SpartanCouncil token is transferred
     event Transferred(address indexed from, address indexed to, uint256 indexed tokenId);
     // Event that is emitted when an existing SpartanCouncil token's uri is altered
     event TokenURISet(uint256 tokenId, string tokenURI);
 
     // Array of token ids
     uint256[] public tokens;
-    // Map between an owner and their tokenx
+    // Map between an owner and their tokens
     mapping(address => uint256) public tokenOwned;
     // Maps a token to the owner address
     mapping(uint256 => address) public ownerOf;
@@ -68,7 +68,7 @@ contract SpartanCouncil is Ownable {
      * @param to address the address to assign the token to
      * @param tokenId uint256 ID of the token to transfer
      */
-    function transfer(
+    function transferFrom(
         address from,
         address to,
         uint256 tokenId
@@ -91,14 +91,7 @@ contract SpartanCouncil is Ownable {
      * @param tokenId uint256 ID of the token to mint
      */
     function mint(address to, uint256 tokenId) public onlyOwner isValidAddress(to) {
-        require(tokenId != 0, "Token ID must be greater than 0");
-        require(ownerOf[tokenId] == address(0), "ERC721: token already minted");
-
-        tokens.push(tokenId);
-        tokenOwned[to] = tokenId;
-        ownerOf[tokenId] = to;
-
-        emit Mint(tokenId, to);
+        _mint(to, tokenId);
     }
 
     /**
@@ -112,17 +105,23 @@ contract SpartanCouncil is Ownable {
         uint256 tokenId,
         string memory uri
     ) public onlyOwner isValidAddress(to) {
-        require(tokenId != 0, "Token ID must be greater than 0");
-        require(ownerOf[tokenId] == address(0), "ERC721: token already minted");
         require(bytes(uri).length > 0, "URI must be supplied");
+
+        _mint(to, tokenId);
+
+        tokenURIs[tokenId] = uri;
+        emit TokenURISet(tokenId, uri);
+    }
+
+    function _mint(address to, uint256 tokenId) private {
+        require(tokenOwned[to] == 0, "Destination address already owns a token");
+        require(ownerOf[tokenId] == address(0), "ERC721: token already minted");
+        require(tokenId != 0, "Token ID must be greater than 0");
 
         tokens.push(tokenId);
         tokenOwned[to] = tokenId;
         ownerOf[tokenId] = to;
 
-        tokenURIs[tokenId] = uri;
-
-        emit TokenURISet(tokenId, uri);
         emit Mint(tokenId, to);
     }
 
