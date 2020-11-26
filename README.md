@@ -6,12 +6,8 @@ This SIP proposes to supersede the current SCCP signaling process outlined in (S
 
 Verify: truffle run verify [ContractName] --network [networkName]
 
-## Contract Address
+## Contract Addresses
 
 ### V1
 
-Ropsten: https://ropsten.etherscan.io/address/0xb5236979738F1A9305D97b836c72123653fcA681
-
-### V2
-
-Rinkeby: https://rinkeby.etherscan.io/address/0xb5236979738f1a9305d97b836c72123653fca681
+Rinkeby: https://rinkeby.etherscan.io/address/0xc122C5829c792d2B33b4723bC4bf57eAef2F6B40#contracts
