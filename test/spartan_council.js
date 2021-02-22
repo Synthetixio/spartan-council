@@ -244,7 +244,7 @@ contract('SpartanCouncil', accounts => {
 			const tx = await spartanCouncil.transferFrom(ownerAddress, arb1Address, tokenIdOne, {
 				from: ownerAddress,
 			});
-			expectEvent(tx, 'Transferred', {
+			expectEvent(tx, 'Transfer', {
 				from: ownerAddress,
 				to: arb1Address,
 				tokenId: tokenIdOne,
@@ -254,7 +254,7 @@ contract('SpartanCouncil', accounts => {
 			const tx = await spartanCouncil.transferFrom(receiver, arb1Address, tokenIdTwo, {
 				from: ownerAddress,
 			});
-			expectEvent(tx, 'Transferred', {
+			expectEvent(tx, 'Transfer', {
 				from: receiver,
 				to: arb1Address,
 				tokenId: tokenIdTwo,
