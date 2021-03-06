@@ -48,6 +48,15 @@ module.exports = {
 			},
 			network_id: 3,
 		},
+		kovan: {
+			provider: () => {
+				return new HDWalletProvider(
+					process.env['MNEMONIC'],
+					`https://kovan.infura.io/v3/${process.env['INFURA_API']}`
+				);
+			},
+			network_id: 42,
+		},
 		rinkeby: {
 			provider: () => {
 				return new HDWalletProvider(
