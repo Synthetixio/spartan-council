@@ -12,8 +12,8 @@ contract SpartanCouncil is Ownable {
     event Mint(uint256 indexed tokenId, address to);
     // Event that is emitted when an existing SpartanCouncil token is burned
     event Burn(uint256 indexed tokenId);
-    // Event that is emitted when an existing SpartanCouncil token is transferred
-    event Transferred(address indexed from, address indexed to, uint256 indexed tokenId);
+    // Event that is emitted when an existing SpartanCouncil token is Transferred
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
     // Event that is emitted when an existing SpartanCouncil token's uri is altered
     event TokenURISet(uint256 tokenId, string tokenURI);
 
@@ -77,7 +77,7 @@ contract SpartanCouncil is Ownable {
 
         ownerOf[tokenId] = to;
 
-        emit Transferred(from, to, tokenId);
+        emit Transfer(from, to, tokenId);
     }
 
     /**
@@ -88,6 +88,8 @@ contract SpartanCouncil is Ownable {
      */
     function mint(address to, uint256 tokenId) public onlyOwner isValidAddress(to) {
         _mint(to, tokenId);
+
+        emit Transfer(address(0), to, tokenId);
     }
 
     /**
@@ -118,6 +120,7 @@ contract SpartanCouncil is Ownable {
         tokenOwned[to] = tokenId;
         ownerOf[tokenId] = to;
 
+        emit Transfer(address(0), to, tokenId);
         emit Mint(tokenId, to);
     }
 
