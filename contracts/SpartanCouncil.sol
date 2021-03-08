@@ -120,6 +120,7 @@ contract SpartanCouncil is Ownable {
         tokenOwned[to] = tokenId;
         ownerOf[tokenId] = to;
 
+        emit Transfer(address(0), to, tokenId);
         emit Mint(tokenId, to);
     }
 
