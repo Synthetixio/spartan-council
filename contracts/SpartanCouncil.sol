@@ -88,8 +88,6 @@ contract SpartanCouncil is Ownable {
      */
     function mint(address to, uint256 tokenId) public onlyOwner isValidAddress(to) {
         _mint(to, tokenId);
-
-        emit Transfer(address(0), to, tokenId);
     }
 
     /**
